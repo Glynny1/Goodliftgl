@@ -7,8 +7,8 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'GoodLift GL — Gym Leaderboard',
-  description: 'Powerlifting leaderboard ranked by IPF GL points',
+  title: 'GudLift PR — Gym Leaderboard',
+  description: 'Powerlifting personal records leaderboard ranked by GL points',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,8 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-zinc-800 bg-zinc-900">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <span className="text-2xl font-bold tracking-tight text-white">GoodLift GL</span>
-              <span className="text-xs text-zinc-500 hidden sm:block">IPF GL Leaderboard</span>
+              <span className="text-2xl font-bold tracking-tight text-white">GudLift PR</span>
+              <span className="text-xs text-zinc-500 hidden sm:block">PR Leaderboard</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm">
               <Link

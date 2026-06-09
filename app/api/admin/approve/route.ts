@@ -52,6 +52,9 @@ export async function POST(req: Request) {
 
   const { error } = await supabase.from('submissions').update(update).eq('id', id)
 
-  if (error) return NextResponse.json({ error: 'Database error.' }, { status: 500 })
+  if (error) {
+    console.error('Approve DB error:', JSON.stringify(error))
+    return NextResponse.json({ error: error.message ?? 'Database error.' }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

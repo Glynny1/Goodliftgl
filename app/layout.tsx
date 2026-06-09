@@ -7,7 +7,7 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'GudLift PR — Gym Leaderboard',
+  title: 'GudLift GL — Gym Leaderboard',
   description: 'Powerlifting personal records leaderboard ranked by GL points',
 }
 
@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-zinc-800 bg-zinc-900">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <span className="text-2xl font-bold tracking-tight text-white">GudLift PR</span>
+              <span className="text-2xl font-bold tracking-tight text-white">GudLift GL</span>
               <span className="text-xs text-zinc-500 hidden sm:block">PR Leaderboard</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm">
@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 href="/submit"
                 className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-md font-medium transition-colors"
               >
-                Submit a Lift
+                Submit your name
               </Link>
               <Link href="/admin" className="text-zinc-400 hover:text-zinc-100 transition-colors">
                 Admin

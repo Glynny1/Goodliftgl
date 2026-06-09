@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       deadlift_kg: meet.deadlift_kg,
       total_kg: meet.total_kg,
       gl_points: meet.gl_points,
+      equipment: meet.equipment,
       entry_type: 'competition',
       meet_name: meet.meet_name,
       federation: meet.federation,

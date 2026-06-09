@@ -22,6 +22,7 @@ export interface Submission {
   deadlift_kg: number | null
   total_kg: number | null
   gl_points: number | null
+  equipment: string | null
   entry_type: EntryType | null
   meet_name: string | null
   federation: string | null

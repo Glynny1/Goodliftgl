@@ -12,6 +12,7 @@ const COLUMNS = [
   { key: 'name',         label: 'Name',    className: 'text-left' },
   { key: 'age',          label: 'Age',     className: 'w-14 text-right' },
   { key: 'weight_class', label: 'Class',   className: 'w-16 text-right' },
+  { key: 'equipment',    label: 'Equip',   className: 'w-20 text-right' },
   { key: 'bodyweight',   label: 'BW (kg)', className: 'w-20 text-right' },
   { key: 'squat',        label: 'Squat',   className: 'w-20 text-right' },
   { key: 'bench',        label: 'Bench',   className: 'w-20 text-right' },
@@ -57,6 +58,7 @@ export default function HomePage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-1">Rankings</h1>
         <p className="text-zinc-400 text-sm">Ordered by IPF GL points &mdash; all weights in kg</p>
+        <p className="text-zinc-500 text-sm mt-1">Below are the top performers in each category. Click your name to view details.</p>
       </div>
 
       {/* Sex tabs */}
@@ -118,6 +120,7 @@ export default function HomePage() {
                   </td>
                   <td className="px-3 py-3 text-right text-zinc-300">{row.age}</td>
                   <td className="px-3 py-3 text-right text-zinc-300">{row.weight_class}</td>
+                  <td className="px-3 py-3 text-right text-zinc-300">{row.equipment ?? '—'}</td>
                   <td className="px-3 py-3 text-right text-zinc-300">{fmt(row.bodyweight_kg)}</td>
                   <td className="px-3 py-3 text-right text-zinc-300">{fmt(row.squat_kg)}</td>
                   <td className="px-3 py-3 text-right text-zinc-300">{fmt(row.bench_kg)}</td>

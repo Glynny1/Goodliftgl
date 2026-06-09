@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       last_name: nameParts.slice(1).join(' '),
       date: meet.date,
       sex: meet.sex,
-      age: meet.age,
+      age: meet.age != null ? Math.round(meet.age) : null,
       weight_class: meet.weight_class,
       bodyweight_kg: meet.bodyweight_kg,
       squat_kg: meet.squat_kg,

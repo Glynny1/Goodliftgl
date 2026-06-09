@@ -1,63 +1,57 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-server'
-import { calcGLPoints } from '@/lib/gl-points'
-import { WEIGHT_CLASSES, type Sex } from '@/lib/weight-classes'
+import { extractOplUsername } from '@/lib/extract-opl-username'
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const { opl_username } = await req.json()
 
-    const {
-      first_name, last_name, date, sex, age,
-      weight_class, bodyweight_kg,
-      squat_kg, bench_kg, deadlift_kg, entry_type,
-    } = body
-
-    // Basic validation
-    if (!first_name || !last_name || !date || !sex || !age || !weight_class || !bodyweight_kg || !entry_type) {
-      return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
-    }
-    if (!['M', 'F'].includes(sex)) {
-      return NextResponse.json({ error: 'Invalid sex value.' }, { status: 400 })
-    }
-    if (!['gym', 'competition'].includes(entry_type)) {
-      return NextResponse.json({ error: 'Invalid entry type.' }, { status: 400 })
-    }
-    const validClasses: readonly string[] = WEIGHT_CLASSES[sex as Sex]
-    if (!validClasses.includes(weight_class)) {
-      return NextResponse.json({ error: 'Invalid weight class for sex.' }, { status: 400 })
-    }
-    if (age < 13 || age > 100) {
-      return NextResponse.json({ error: 'Age must be between 13 and 100.' }, { status: 400 })
-    }
-    if (bodyweight_kg <= 0 || bodyweight_kg > 300) {
-      return NextResponse.json({ error: 'Invalid bodyweight.' }, { status: 400 })
+    if (!opl_username || typeof opl_username !== 'string') {
+      return NextResponse.json({ error: 'OpenPowerlifting username is required.' }, { status: 400 })
     }
 
-    const total_kg =
-      (squat_kg ?? 0) + (bench_kg ?? 0) + (deadlift_kg ?? 0)
+    const username = extractOplUsername(opl_username)
+    if (!username) {
+      return NextResponse.json({ error: 'OpenPowerlifting username is required.' }, { status: 400 })
+    }
 
-    const gl_points = total_kg > 0
-      ? calcGLPoints(total_kg, bodyweight_kg, sex as Sex)
-      : null
-
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('submissions').insert({
-      first_name: first_name.trim(),
-      last_name: last_name.trim(),
-      date,
-      sex,
-      age,
-      weight_class,
-      bodyweight_kg,
-      squat_kg: squat_kg ?? null,
-      bench_kg: bench_kg ?? null,
-      deadlift_kg: deadlift_kg ?? null,
-      total_kg: total_kg > 0 ? total_kg : null,
-      gl_points,
-      entry_type,
-      status: 'pending',
+    // Validate the username exists on OpenPowerlifting
+    const oplRes = await fetch(`https://www.openpowerlifting.org/api/liftercsv/${username}`, {
+      headers: { 'User-Agent': 'GudLiftPR/1.0' },
     })
+
+    if (oplRes.status === 404) {
+      return NextResponse.json(
+        { error: `"${username}" was not found on OpenPowerlifting. Check the spelling and try again.` },
+        { status: 400 }
+      )
+    }
+    if (!oplRes.ok) {
+      return NextResponse.json(
+        { error: 'Could not reach OpenPowerlifting to verify your username. Please try again shortly.' },
+        { status: 502 }
+      )
+    }
+
+    // Check for duplicate pending/approved submission
+    const supabase = createAdminClient()
+    const { data: existing } = await supabase
+      .from('submissions')
+      .select('id, status')
+      .eq('opl_username', username)
+      .in('status', ['pending', 'approved'])
+      .maybeSingle()
+
+    if (existing) {
+      const msg = existing.status === 'approved'
+        ? 'This OpenPowerlifting profile is already on the leaderboard.'
+        : 'This OpenPowerlifting profile is already pending review.'
+      return NextResponse.json({ error: msg }, { status: 409 })
+    }
+
+    const { error } = await supabase
+      .from('submissions')
+      .insert({ opl_username: username, status: 'pending' })
 
     if (error) {
       console.error('Supabase insert error:', error)

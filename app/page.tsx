@@ -1,25 +1,24 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase-browser'
-import type { Submission, Sex, EntryType } from '@/lib/weight-classes'
+import type { Submission, Sex } from '@/lib/weight-classes'
 
 type Tab = 'M' | 'F'
-type EntryTab = 'all' | 'gym' | 'competition'
 
 const COLUMNS = [
-  { key: 'rank',         label: '#',            className: 'w-10 text-right' },
-  { key: 'name',         label: 'Name',         className: 'text-left' },
-  { key: 'age',          label: 'Age',          className: 'w-14 text-right' },
-  { key: 'weight_class', label: 'Class',        className: 'w-16 text-right' },
-  { key: 'bodyweight',   label: 'BW (kg)',      className: 'w-20 text-right' },
-  { key: 'squat',        label: 'Squat',        className: 'w-20 text-right' },
-  { key: 'bench',        label: 'Bench',        className: 'w-20 text-right' },
-  { key: 'deadlift',     label: 'Dead',         className: 'w-20 text-right' },
-  { key: 'total',        label: 'Total',        className: 'w-20 text-right' },
-  { key: 'gl_points',    label: 'GL Pts',       className: 'w-24 text-right font-semibold' },
-  { key: 'entry_type',   label: 'Type',         className: 'w-24 text-right' },
-  { key: 'date',         label: 'Date',         className: 'w-28 text-right' },
+  { key: 'rank',         label: '#',       className: 'w-10 text-right' },
+  { key: 'name',         label: 'Name',    className: 'text-left' },
+  { key: 'age',          label: 'Age',     className: 'w-14 text-right' },
+  { key: 'weight_class', label: 'Class',   className: 'w-16 text-right' },
+  { key: 'bodyweight',   label: 'BW (kg)', className: 'w-20 text-right' },
+  { key: 'squat',        label: 'Squat',   className: 'w-20 text-right' },
+  { key: 'bench',        label: 'Bench',   className: 'w-20 text-right' },
+  { key: 'deadlift',     label: 'Deadlift',    className: 'w-20 text-right' },
+  { key: 'total',        label: 'Total',   className: 'w-20 text-right' },
+  { key: 'gl_points',    label: 'GL Pts',  className: 'w-24 text-right font-semibold' },
+  { key: 'date',         label: 'Date',    className: 'w-28 text-right' },
 ]
 
 function fmt(val: number | null, decimals = 2) {
@@ -31,30 +30,23 @@ function fmtDate(date: string) {
 }
 
 export default function HomePage() {
-  const [sexTab, setSexTab]     = useState<Tab>('M')
-  const [entryTab, setEntryTab] = useState<EntryTab>('all')
-  const [rows, setRows]         = useState<Submission[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [sexTab, setSexTab] = useState<Tab>('M')
+  const [rows, setRows]     = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
 
   const supabase = createClient()
 
   const load = useCallback(async () => {
     setLoading(true)
-    let query = supabase
+    const { data } = await supabase
       .from('submissions')
       .select('*')
       .eq('status', 'approved')
       .eq('sex', sexTab)
-      .order('gl_points', { ascending: false })
-
-    if (entryTab !== 'all') {
-      query = query.eq('entry_type', entryTab)
-    }
-
-    const { data } = await query
+      .order('gl_points', { ascending: false, nullsFirst: false })
     setRows(data ?? [])
     setLoading(false)
-  }, [sexTab, entryTab])
+  }, [sexTab])
 
   useEffect(() => { load() }, [load])
 
@@ -66,7 +58,7 @@ export default function HomePage() {
       </div>
 
       {/* Sex tabs */}
-      <div className="flex gap-1 mb-4 bg-zinc-900 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-6 bg-zinc-900 rounded-lg p-1 w-fit">
         {(['M', 'F'] as Tab[]).map(s => (
           <button
             key={s}
@@ -76,21 +68,6 @@ export default function HomePage() {
             }`}
           >
             {s === 'M' ? 'Men' : 'Women'}
-          </button>
-        ))}
-      </div>
-
-      {/* Entry type tabs */}
-      <div className="flex gap-1 mb-6 bg-zinc-900 rounded-lg p-1 w-fit">
-        {(['all', 'gym', 'competition'] as EntryTab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setEntryTab(t)}
-            className={`px-5 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-              entryTab === t ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -133,7 +110,9 @@ export default function HomePage() {
                 >
                   <td className="px-3 py-3 text-right text-zinc-400 font-mono">{i + 1}</td>
                   <td className="px-3 py-3 font-medium">
-                    {row.first_name} {row.last_name}
+                    <Link href={`/u/${row.opl_username}`} className="hover:text-red-400 transition-colors">
+                      {row.first_name} {row.last_name}
+                    </Link>
                   </td>
                   <td className="px-3 py-3 text-right text-zinc-300">{row.age}</td>
                   <td className="px-3 py-3 text-right text-zinc-300">{row.weight_class}</td>
@@ -143,16 +122,7 @@ export default function HomePage() {
                   <td className="px-3 py-3 text-right text-zinc-300">{fmt(row.deadlift_kg)}</td>
                   <td className="px-3 py-3 text-right font-medium text-zinc-100">{fmt(row.total_kg)}</td>
                   <td className="px-3 py-3 text-right font-bold text-amber-400 font-mono">{fmt(row.gl_points ?? null, 4)}</td>
-                  <td className="px-3 py-3 text-right">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      row.entry_type === 'competition'
-                        ? 'bg-blue-900/50 text-blue-300'
-                        : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {row.entry_type}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-right text-zinc-500 text-xs">{fmtDate(row.date)}</td>
+                  <td className="px-3 py-3 text-right text-zinc-500 text-xs">{row.date ? fmtDate(row.date) : '—'}</td>
                 </tr>
               ))
             )}

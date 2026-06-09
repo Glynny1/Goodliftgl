@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">{children}</main>
         <footer className="border-t border-zinc-800 py-6 text-center text-xs text-zinc-600">
-          GL points calculated using the IPF GL formula &mdash; rankings are for fun, lift heavy.
+          Data taken from https://www.openpowerlifting.org/
         </footer>
       </body>
     </html>

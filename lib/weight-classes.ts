@@ -9,19 +9,22 @@ export type EntryType = 'gym' | 'competition'
 
 export interface Submission {
   id: string
-  first_name: string
-  last_name: string
-  date: string
-  sex: Sex
-  age: number
-  weight_class: string
-  bodyweight_kg: number
+  opl_username: string
+  first_name: string | null
+  last_name: string | null
+  date: string | null
+  sex: Sex | null
+  age: number | null
+  weight_class: string | null
+  bodyweight_kg: number | null
   squat_kg: number | null
   bench_kg: number | null
   deadlift_kg: number | null
   total_kg: number | null
   gl_points: number | null
-  entry_type: EntryType
+  entry_type: EntryType | null
+  meet_name: string | null
+  federation: string | null
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
 }

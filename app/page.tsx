@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase-browser'
 import type { Submission, Sex } from '@/lib/weight-classes'
 
-type Tab = 'M' | 'F'
+type Tab = 'all' | 'M' | 'F'
 
 const COLUMNS = [
   { key: 'rank',         label: '#',       className: 'w-10 text-right' },
@@ -17,7 +17,7 @@ const COLUMNS = [
   { key: 'bench',        label: 'Bench',   className: 'w-20 text-right' },
   { key: 'deadlift',     label: 'Deadlift',    className: 'w-20 text-right' },
   { key: 'total',        label: 'Total',   className: 'w-20 text-right' },
-  { key: 'gl_points',    label: 'GL Pts',  className: 'w-24 text-right font-semibold' },
+  { key: 'gl_points',    label: 'GL Points', className: 'w-24 text-right font-semibold' },
   { key: 'date',         label: 'Date',    className: 'w-28 text-right' },
 ]
 
@@ -30,7 +30,7 @@ function fmtDate(date: string) {
 }
 
 export default function HomePage() {
-  const [sexTab, setSexTab] = useState<Tab>('M')
+  const [sexTab, setSexTab] = useState<Tab>('all')
   const [rows, setRows]     = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -38,12 +38,14 @@ export default function HomePage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    let query = supabase
       .from('submissions')
       .select('*')
       .eq('status', 'approved')
-      .eq('sex', sexTab)
-      .order('gl_points', { ascending: false, nullsFirst: false })
+
+    if (sexTab !== 'all') query = query.eq('sex', sexTab)
+
+    const { data } = await query.order('gl_points', { ascending: false, nullsFirst: false })
     setRows(data ?? [])
     setLoading(false)
   }, [sexTab])
@@ -59,7 +61,7 @@ export default function HomePage() {
 
       {/* Sex tabs */}
       <div className="flex gap-1 mb-6 bg-zinc-900 rounded-lg p-1 w-fit">
-        {(['M', 'F'] as Tab[]).map(s => (
+        {(['all', 'M', 'F'] as Tab[]).map(s => (
           <button
             key={s}
             onClick={() => setSexTab(s)}
@@ -67,7 +69,7 @@ export default function HomePage() {
               sexTab === s ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            {s === 'M' ? 'Men' : 'Women'}
+            {s === 'all' ? 'Overall' : s === 'M' ? 'Men' : 'Women'}
           </button>
         ))}
       </div>
@@ -111,7 +113,7 @@ export default function HomePage() {
                   <td className="px-3 py-3 text-right text-zinc-400 font-mono">{i + 1}</td>
                   <td className="px-3 py-3 font-medium">
                     <Link href={`/u/${row.opl_username}`} className="hover:text-red-400 transition-colors">
-                      {row.first_name} {row.last_name}
+                      {`${row.first_name ?? ''} ${row.last_name ?? ''}`.replace(/\s*#\d+$/, '').trim()}
                     </Link>
                   </td>
                   <td className="px-3 py-3 text-right text-zinc-300">{row.age}</td>

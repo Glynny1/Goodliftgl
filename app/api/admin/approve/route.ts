@@ -28,7 +28,8 @@ export async function POST(req: Request) {
   let update: Record<string, unknown> = { status: action === 'approve' ? 'approved' : 'rejected' }
 
   if (action === 'approve' && meet) {
-    const nameParts = meet.name.trim().split(' ')
+    const cleanName = meet.name.trim().replace(/\s*#\d+$/, '')
+    const nameParts = cleanName.split(' ')
     update = {
       ...update,
       first_name: nameParts[0],

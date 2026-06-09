@@ -58,7 +58,7 @@ export default function HomePage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-1">Rankings</h1>
         <p className="text-zinc-400 text-sm">Ordered by IPF GL points &mdash; all weights in kg</p>
-        <p className="text-zinc-500 text-sm mt-1">Below are the top performers in each category. Click your name to view details.</p>
+        <p className="text-zinc-500 text-sm mt-1">Below are the top performers by GL points. Click your name to view details.</p>
       </div>
 
       {/* Sex tabs */}

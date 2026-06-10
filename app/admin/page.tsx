@@ -14,6 +14,7 @@ interface EditValues {
   first_name: string; last_name: string; date: string; sex: Sex
   age: string; weight_class: string; bodyweight_kg: string
   squat_kg: string; bench_kg: string; deadlift_kg: string
+  total_kg: string; equipment: string; meet_name: string; federation: string
 }
 
 function toEditValues(s: Submission): EditValues {
@@ -24,6 +25,10 @@ function toEditValues(s: Submission): EditValues {
     squat_kg: s.squat_kg != null ? String(s.squat_kg) : '',
     bench_kg: s.bench_kg != null ? String(s.bench_kg) : '',
     deadlift_kg: s.deadlift_kg != null ? String(s.deadlift_kg) : '',
+    total_kg: s.total_kg != null ? String(s.total_kg) : '',
+    equipment: s.equipment ?? '',
+    meet_name: s.meet_name ?? '',
+    federation: s.federation ?? '',
   }
 }
 
@@ -214,6 +219,7 @@ function EditModal({ sub, onSave, onClose }: { sub: Submission; onSave: (s: Subm
         squat_kg: values.squat_kg !== '' ? Number(values.squat_kg) : null,
         bench_kg: values.bench_kg !== '' ? Number(values.bench_kg) : null,
         deadlift_kg: values.deadlift_kg !== '' ? Number(values.deadlift_kg) : null,
+        total_kg: values.total_kg !== '' ? Number(values.total_kg) : null,
       }),
     })
     if (res.ok) { onSave(await res.json()) }
@@ -288,6 +294,14 @@ function EditModal({ sub, onSave, onClose }: { sub: Submission; onSave: (s: Subm
             <F label="Squat (kg)"><input type="number" value={values.squat_kg} onChange={set('squat_kg')} step={0.5} min={0} placeholder="—" className={ic} /></F>
             <F label="Bench (kg)"><input type="number" value={values.bench_kg} onChange={set('bench_kg')} step={0.5} min={0} placeholder="—" className={ic} /></F>
             <F label="Deadlift (kg)"><input type="number" value={values.deadlift_kg} onChange={set('deadlift_kg')} step={0.5} min={0} placeholder="—" className={ic} /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Total (kg)"><input type="number" value={values.total_kg} onChange={set('total_kg')} step={0.5} min={0} placeholder="Auto-calculated if blank" className={ic} /></F>
+            <F label="Equipment"><input type="text" value={values.equipment} onChange={set('equipment')} placeholder="e.g. Raw, Wraps, Single-ply" className={ic} /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Meet Name"><input type="text" value={values.meet_name} onChange={set('meet_name')} className={ic} /></F>
+            <F label="Federation"><input type="text" value={values.federation} onChange={set('federation')} className={ic} /></F>
           </div>
         </div>
         {error && <p className="text-red-400 text-sm mt-4 bg-red-950/40 px-3 py-2 rounded-lg">{error}</p>}

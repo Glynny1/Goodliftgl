@@ -16,13 +16,15 @@ export async function PATCH(req: Request) {
 
   const {
     id, first_name, last_name, date, sex, age,
-    weight_class, bodyweight_kg, squat_kg, bench_kg, deadlift_kg, entry_type,
+    weight_class, bodyweight_kg, squat_kg, bench_kg, deadlift_kg,
+    total_kg: total_kg_override, equipment, meet_name, federation, entry_type,
   } = await req.json()
 
   if (!id) return NextResponse.json({ error: 'Missing id.' }, { status: 400 })
 
-  const total_kg = (squat_kg ?? 0) + (bench_kg ?? 0) + (deadlift_kg ?? 0)
-  const gl_points = total_kg > 0 && bodyweight_kg && sex
+  const auto_total = (squat_kg ?? 0) + (bench_kg ?? 0) + (deadlift_kg ?? 0)
+  const total_kg = total_kg_override ?? (auto_total > 0 ? auto_total : null)
+  const gl_points = total_kg && bodyweight_kg && sex
     ? calcGLPoints(total_kg, bodyweight_kg, sex as Sex)
     : null
 
@@ -36,8 +38,11 @@ export async function PATCH(req: Request) {
       squat_kg: squat_kg ?? null,
       bench_kg: bench_kg ?? null,
       deadlift_kg: deadlift_kg ?? null,
-      total_kg: total_kg > 0 ? total_kg : null,
+      total_kg,
       gl_points,
+      equipment: equipment || null,
+      meet_name: meet_name || null,
+      federation: federation || null,
       entry_type,
     })
     .eq('id', id)

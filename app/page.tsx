@@ -4,6 +4,10 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase-browser'
 import type { Submission, Sex } from '@/lib/weight-classes'
+import type { HistoryPoint } from '@/app/api/stats/gl-history/route'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts'
 
 type Tab = 'all' | 'M' | 'F'
 
@@ -30,12 +34,43 @@ function fmtDate(date: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+interface YearPoint {
+  year: string
+  men: number | null
+  women: number | null
+}
+
+function buildChartData(meets: HistoryPoint[]): YearPoint[] {
+  const byYear: Record<string, { men: number[]; women: number[] }> = {}
+  for (const m of meets) {
+    const year = m.date.slice(0, 4)
+    if (!byYear[year]) byYear[year] = { men: [], women: [] }
+    if (m.sex === 'M') byYear[year].men.push(m.gl_points)
+    else byYear[year].women.push(m.gl_points)
+  }
+  return Object.entries(byYear)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([year, { men, women }]) => ({
+      year,
+      men:   men.length   ? Math.round((men.reduce((a, b) => a + b, 0)   / men.length)   * 100) / 100 : null,
+      women: women.length ? Math.round((women.reduce((a, b) => a + b, 0) / women.length) * 100) / 100 : null,
+    }))
+}
+
 export default function HomePage() {
   const [sexTab, setSexTab] = useState<Tab>('all')
   const [rows, setRows]     = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
+  const [historyMeets, setHistoryMeets] = useState<HistoryPoint[]>([])
+  const [chartOpen, setChartOpen]       = useState(false)
 
   const supabase = createClient()
+
+  useEffect(() => {
+    fetch('/api/stats/gl-history')
+      .then(r => r.json())
+      .then(({ meets }) => setHistoryMeets(meets ?? []))
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -138,6 +173,49 @@ export default function HomePage() {
       <p className="mt-4 text-xs text-zinc-600">
         {rows.length} {rows.length === 1 ? 'entry' : 'entries'} shown
       </p>
+
+      {/* GL Progression Chart — collapsible */}
+      <div className="mt-10 border border-zinc-800 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setChartOpen(o => !o)}
+          className="w-full flex items-center justify-between px-5 py-4 bg-zinc-900 hover:bg-zinc-800/60 transition-colors text-left"
+        >
+          <div>
+            <span className="font-semibold text-sm">Gym GL Progression</span>
+            <span className="ml-3 text-xs text-zinc-500">Average GL by year across all members</span>
+          </div>
+          <span className="text-zinc-400 text-lg leading-none">{chartOpen ? '▲' : '▼'}</span>
+        </button>
+        {chartOpen && (() => {
+          const chartData = buildChartData(historyMeets)
+          return (
+            <div className="bg-zinc-900/40 px-6 py-6 border-t border-zinc-800">
+              {historyMeets.length === 0 ? (
+                <p className="text-zinc-500 text-sm text-center py-8">Loading history from OpenPowerlifting...</p>
+              ) : chartData.length < 2 ? (
+                <p className="text-zinc-500 text-sm text-center py-8">Not enough data across multiple years yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="year" tick={{ fill: '#71717a', fontSize: 12 }} axisLine={{ stroke: '#3f3f46' }} tickLine={false} />
+                    <YAxis tick={{ fill: '#71717a', fontSize: 12 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                    <Tooltip
+                      contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }}
+                      labelStyle={{ color: '#e4e4e7', fontWeight: 600 }}
+                      itemStyle={{ color: '#a1a1aa' }}
+                      formatter={(val) => [typeof val === 'number' ? `${val.toFixed(2)} GL` : val, undefined]}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: 16, fontSize: 13 }} />
+                    <Line type="monotone" dataKey="men"   name="Men"   stroke="#3b82f6" strokeWidth={2} dot={{ r: 4, fill: '#3b82f6' }} connectNulls activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="women" name="Women" stroke="#f43f5e" strokeWidth={2} dot={{ r: 4, fill: '#f43f5e' }} connectNulls activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          )
+        })()}
+      </div>
     </div>
   )
 }

@@ -380,6 +380,8 @@ export default function AdminPage() {
   const [reviewingSub, setReviewingSub] = useState<Submission | null>(null)
   const [editingSub, setEditingSub]   = useState<Submission | null>(null)
   const [search, setSearch]           = useState('')
+  const [repollingAll, setRepollingAll] = useState(false)
+  const [repollProgress, setRepollProgress] = useState('')
 
   const supabase = createClient()
 
@@ -430,6 +432,29 @@ export default function AdminPage() {
     })
     setPending(prev => prev.filter(s => s.id !== id))
     setReviewingSub(null)
+  }
+
+  async function repollAll() {
+    setRepollingAll(true)
+    setRepollProgress('')
+    const toRepoll = [...approved]
+    let done = 0
+    for (const sub of toRepoll) {
+      setRepollProgress(`Repolling ${done + 1} / ${toRepoll.length}: ${sub.opl_username}`)
+      const lookup = await fetch(`/api/admin/opl-lookup?username=${encodeURIComponent(sub.opl_username)}`)
+      const data = await lookup.json()
+      if (data.bestMeet) {
+        await fetch('/api/admin/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: sub.id, action: 'approve', meet: data.bestMeet }),
+        })
+      }
+      done++
+    }
+    setRepollProgress(`Done — ${done} lifter${done !== 1 ? 's' : ''} updated.`)
+    setRepollingAll(false)
+    loadApproved()
   }
 
   function handleEdited(updated: Submission) {
@@ -537,11 +562,25 @@ export default function AdminPage() {
         )
       ) : (
         <div>
-          <input
-            type="text" placeholder="Search by name or username..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full max-w-sm bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-600/50 mb-5"
-          />
+          <div className="flex items-center gap-3 mb-5">
+            <input
+              type="text" placeholder="Search by name or username..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full max-w-sm bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-600/50"
+            />
+            <button
+              onClick={repollAll}
+              disabled={repollingAll || approved.length === 0}
+              className="shrink-0 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              {repollingAll ? 'Repolling...' : 'Repoll All from OPL'}
+            </button>
+          </div>
+          {repollProgress && (
+            <p className={`text-xs mb-4 px-3 py-2 rounded-lg border ${repollingAll ? 'text-blue-300 bg-blue-950/30 border-blue-800' : 'text-green-300 bg-green-950/30 border-green-800'}`}>
+              {repollProgress}
+            </p>
+          )}
           {filteredApproved.length === 0 ? (
             <p className="text-zinc-500 py-12 text-center">No approved submissions found.</p>
           ) : (

@@ -30,6 +30,7 @@ export async function POST(req: Request) {
   if (action === 'approve' && meet) {
     const cleanName = meet.name.trim().replace(/\s*#\d+$/, '')
     const nameParts = cleanName.split(' ')
+
     update = {
       ...update,
       first_name: nameParts[0],

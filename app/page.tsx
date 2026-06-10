@@ -10,6 +10,9 @@ import {
 } from 'recharts'
 
 type Tab = 'all' | 'M' | 'F'
+type EquipTab = 'all' | 'Raw' | 'Wraps' | 'Single-ply' | 'Multi-ply'
+
+const EQUIP_TABS: EquipTab[] = ['all', 'Raw', 'Wraps', 'Single-ply', 'Multi-ply']
 
 const COLUMNS = [
   { key: 'rank',         label: '#',       className: 'w-10 text-right' },
@@ -58,9 +61,10 @@ function buildChartData(meets: HistoryPoint[]): YearPoint[] {
 }
 
 export default function HomePage() {
-  const [sexTab, setSexTab] = useState<Tab>('all')
-  const [rows, setRows]     = useState<Submission[]>([])
-  const [loading, setLoading] = useState(true)
+  const [sexTab, setSexTab]     = useState<Tab>('all')
+  const [equipTab, setEquipTab] = useState<EquipTab>('all')
+  const [rows, setRows]         = useState<Submission[]>([])
+  const [loading, setLoading]   = useState(true)
   const [historyMeets, setHistoryMeets] = useState<HistoryPoint[]>([])
   const [chartOpen, setChartOpen]       = useState(false)
 
@@ -79,12 +83,13 @@ export default function HomePage() {
       .select('*')
       .eq('status', 'approved')
 
-    if (sexTab !== 'all') query = query.eq('sex', sexTab)
+    if (sexTab !== 'all')   query = query.eq('sex', sexTab)
+    if (equipTab !== 'all') query = query.eq('equipment', equipTab)
 
     const { data } = await query.order('gl_points', { ascending: false, nullsFirst: false })
     setRows(data ?? [])
     setLoading(false)
-  }, [sexTab])
+  }, [sexTab, equipTab])
 
   useEffect(() => { load() }, [load])
 
@@ -97,7 +102,7 @@ export default function HomePage() {
       </div>
 
       {/* Sex tabs */}
-      <div className="flex gap-1 mb-6 bg-zinc-900 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-3 bg-zinc-900 rounded-lg p-1 w-fit">
         {(['all', 'M', 'F'] as Tab[]).map(s => (
           <button
             key={s}
@@ -107,6 +112,21 @@ export default function HomePage() {
             }`}
           >
             {s === 'all' ? 'Overall' : s === 'M' ? 'Men' : 'Women'}
+          </button>
+        ))}
+      </div>
+
+      {/* Equipment tabs */}
+      <div className="flex gap-1 mb-6 bg-zinc-900/50 rounded-lg p-1 w-fit">
+        {EQUIP_TABS.map(e => (
+          <button
+            key={e}
+            onClick={() => setEquipTab(e)}
+            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              equipTab === e ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {e === 'all' ? 'All Equipment' : e}
           </button>
         ))}
       </div>

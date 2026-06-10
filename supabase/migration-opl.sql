@@ -20,6 +20,7 @@ CREATE TABLE submissions (
   deadlift_kg   NUMERIC(6,2),
   total_kg      NUMERIC(7,2),
   gl_points     NUMERIC(8,4),
+  equipment     TEXT,
   entry_type    TEXT         DEFAULT 'competition' CHECK (entry_type IN ('gym', 'competition') OR entry_type IS NULL),
   meet_name     TEXT,
   federation    TEXT,

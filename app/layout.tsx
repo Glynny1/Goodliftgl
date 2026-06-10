@@ -7,7 +7,7 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'GudLift GL — Gym Leaderboard',
+  title: 'Gudlift GL — Gym Leaderboard',
   description: 'Powerlifting personal records leaderboard ranked by GL points',
 }
 
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <rect x="62" y="5" width="28" height="24" rx="4" fill="#dc2626"/>
                 <path d="M10 29 L10 68 A40 40 0 0 1 90 68 L90 29 L62 29 L62 68 A12 12 0 0 0 38 68 L38 29 Z" fill="#dc2626"/>
               </svg>
-              <span className="text-2xl font-bold tracking-tight text-white">GudLift GL</span>
+              <span className="text-2xl font-bold tracking-tight text-white">Gudlift GL</span>
               <span className="text-xs text-zinc-500 hidden sm:block">PR Leaderboard</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm">

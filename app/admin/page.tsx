@@ -83,6 +83,14 @@ function OPLReviewModal({
               Review: <span className="font-mono text-zinc-300">{sub.opl_username}</span>
             </h2>
             {lifterName && <p className="text-sm text-zinc-400 mt-0.5">{lifterName}</p>}
+            <a
+              href={`https://www.openpowerlifting.org/u/${sub.opl_username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:text-blue-300 underline mt-1 inline-block"
+            >
+              View on OpenPowerlifting ↗
+            </a>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-xl leading-none">&times;</button>
         </div>

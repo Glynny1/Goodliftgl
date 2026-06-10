@@ -88,6 +88,8 @@ export async function fetchLifterData(username: string): Promise<OPLResult> {
 
   const bestMeet = meets.reduce<OPLMeet | null>((best, m) => {
     if (!m.gl_points) return best
+    // Leaderboard is full power only — skip bench-only, push-pull, deadlift-only etc.
+    if (!m.squat_kg || !m.bench_kg || !m.deadlift_kg) return best
     if (!best || m.gl_points > (best.gl_points ?? 0)) return m
     return best
   }, null)

@@ -185,8 +185,10 @@ function OPLReviewModal({
 
 function EditModal({ sub, onSave, onClose }: { sub: Submission; onSave: (s: Submission) => void; onClose: () => void }) {
   const [values, setValues] = useState<EditValues>(toEditValues(sub))
-  const [saving, setSaving] = useState(false)
-  const [error, setError]   = useState('')
+  const [saving, setSaving]   = useState(false)
+  const [repolling, setRepolling] = useState(false)
+  const [error, setError]     = useState('')
+  const [repollMsg, setRepollMsg] = useState('')
 
   const set = (k: keyof EditValues) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -210,12 +212,56 @@ function EditModal({ sub, onSave, onClose }: { sub: Submission; onSave: (s: Subm
     else { const d = await res.json(); setError(d.error ?? 'Failed to save.'); setSaving(false) }
   }
 
+  async function repoll() {
+    setRepolling(true); setError(''); setRepollMsg('')
+    const res = await fetch(`/api/admin/opl-lookup?username=${encodeURIComponent(sub.opl_username)}`)
+    const data = await res.json()
+    if (!res.ok || data.error) {
+      setError(data.error ?? 'Failed to fetch from OpenPowerlifting.')
+      setRepolling(false)
+      return
+    }
+    if (!data.bestMeet) {
+      setError('No full power meet found for this lifter on OpenPowerlifting.')
+      setRepolling(false)
+      return
+    }
+    const approveRes = await fetch('/api/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: sub.id, action: 'approve', meet: data.bestMeet }),
+    })
+    if (!approveRes.ok) {
+      const d = await approveRes.json()
+      setError(d.error ?? 'Failed to update entry.')
+      setRepolling(false)
+      return
+    }
+    setRepollMsg(`Updated to best full power meet: ${data.bestMeet.meet_name} (${data.bestMeet.gl_points?.toFixed(4)} GL)`)
+    setRepolling(false)
+  }
+
   const weightClasses = WEIGHT_CLASSES[values.sex]
 
   return (
     <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold mb-5">Edit Entry</h2>
+        <h2 className="text-lg font-bold mb-1">Edit Entry</h2>
+        <p className="text-xs text-zinc-500 mb-5 font-mono">{sub.opl_username}</p>
+
+        {/* Repoll banner */}
+        <div className="mb-5 p-3 bg-zinc-800 rounded-lg border border-zinc-700 flex items-center justify-between gap-3">
+          <p className="text-xs text-zinc-400">Re-fetch latest data from OpenPowerlifting and update to best full power meet.</p>
+          <button
+            onClick={repoll}
+            disabled={repolling || saving}
+            className="shrink-0 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap"
+          >
+            {repolling ? 'Fetching...' : 'Repoll OPL'}
+          </button>
+        </div>
+        {repollMsg && <p className="text-green-400 text-xs mb-4 bg-green-950/40 px-3 py-2 rounded-lg">{repollMsg}</p>}
+
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <F label="First Name"><input type="text" value={values.first_name} onChange={set('first_name')} className={ic} /></F>
@@ -239,7 +285,7 @@ function EditModal({ sub, onSave, onClose }: { sub: Submission; onSave: (s: Subm
         {error && <p className="text-red-400 text-sm mt-4 bg-red-950/40 px-3 py-2 rounded-lg">{error}</p>}
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2.5 rounded-lg text-sm font-medium transition-colors">Cancel</button>
-          <button onClick={save} disabled={saving} className="flex-1 bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">{saving ? 'Saving...' : 'Save Changes'}</button>
+          <button onClick={save} disabled={saving || repolling} className="flex-1 bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">{saving ? 'Saving...' : 'Save Changes'}</button>
         </div>
       </div>
     </div>

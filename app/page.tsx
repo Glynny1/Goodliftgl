@@ -61,14 +61,19 @@ function buildChartData(meets: HistoryPoint[]): YearPoint[] {
 }
 
 export default function HomePage() {
-  const [sexTab, setSexTab]     = useState<Tab>('all')
-  const [equipTab, setEquipTab] = useState<EquipTab>('all')
+  const [sexTab, setSexTab]           = useState<Tab>('all')
+  const [equipTab, setEquipTab]       = useState<EquipTab>('all')
+  const [weightClassTab, setWeightClassTab]         = useState<string>('all')
+  const [availableWeightClasses, setAvailableWeightClasses] = useState<string[]>([])
   const [rows, setRows]         = useState<Submission[]>([])
   const [loading, setLoading]   = useState(true)
   const [historyMeets, setHistoryMeets] = useState<HistoryPoint[]>([])
   const [chartOpen, setChartOpen]       = useState(false)
 
   const supabase = createClient()
+
+  // Reset weight class when sex tab changes (classes differ by sex)
+  useEffect(() => { setWeightClassTab('all') }, [sexTab])
 
   useEffect(() => {
     fetch('/api/stats/gl-history')
@@ -88,8 +93,22 @@ export default function HomePage() {
     const { data } = await query.order('gl_points', { ascending: false, nullsFirst: false })
     let all = data ?? []
 
+    // Derive available weight classes from the sex-filtered data (before other filters)
+    if (sexTab !== 'all') {
+      const classes = [...new Set(all.map(r => r.weight_class).filter(Boolean) as string[])]
+        .sort((a, b) => {
+          const n = parseFloat(a) - parseFloat(b)
+          if (n !== 0) return n
+          return a.includes('+') ? 1 : -1
+        })
+      setAvailableWeightClasses(classes)
+    }
+
     // Filter by equipment if a specific tab is selected
     if (equipTab !== 'all') all = all.filter(r => r.equipment === equipTab)
+
+    // Filter by weight class if selected
+    if (weightClassTab !== 'all') all = all.filter(r => r.weight_class === weightClassTab)
 
     // Deduplicate by opl_username: keep the highest GL row per lifter
     const seen = new Map<string, Submission>()
@@ -102,7 +121,7 @@ export default function HomePage() {
 
     setRows([...seen.values()].sort((a, b) => (b.gl_points ?? 0) - (a.gl_points ?? 0)))
     setLoading(false)
-  }, [sexTab, equipTab])
+  }, [sexTab, equipTab, weightClassTab])
 
   useEffect(() => { load() }, [load])
 
@@ -143,6 +162,23 @@ export default function HomePage() {
           </button>
         ))}
       </div>
+
+      {/* Weight class filter — only shown when a sex is selected */}
+      {sexTab !== 'all' && (
+        <div className="flex gap-1 mb-6 flex-wrap">
+          {['all', ...availableWeightClasses].map(wc => (
+            <button
+              key={wc}
+              onClick={() => setWeightClassTab(wc)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                weightClassTab === wc ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {wc === 'all' ? 'All classes' : `${wc} kg`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-zinc-800">

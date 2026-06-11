@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import type { OPLMeet, PersonalBests } from '@/lib/opl'
+import type { OPLMeet } from '@/lib/opl'
+
+interface PersonalBests {
+  squat: number | null; bench: number | null; deadlift: number | null
+  total: number | null; gl: number | null
+}
 
 function fmt(val: number | null, d = 2) { return val != null ? val.toFixed(d) : '—' }
 function fmtDate(date: string) {

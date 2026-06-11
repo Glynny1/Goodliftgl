@@ -83,11 +83,24 @@ export default function HomePage() {
       .select('*')
       .eq('status', 'approved')
 
-    if (sexTab !== 'all')   query = query.eq('sex', sexTab)
-    if (equipTab !== 'all') query = query.eq('equipment', equipTab)
+    if (sexTab !== 'all') query = query.eq('sex', sexTab)
 
     const { data } = await query.order('gl_points', { ascending: false, nullsFirst: false })
-    setRows(data ?? [])
+    let all = data ?? []
+
+    // Filter by equipment if a specific tab is selected
+    if (equipTab !== 'all') all = all.filter(r => r.equipment === equipTab)
+
+    // Deduplicate by opl_username: keep the highest GL row per lifter
+    const seen = new Map<string, Submission>()
+    for (const row of all) {
+      const existing = seen.get(row.opl_username)
+      if (!existing || (row.gl_points ?? 0) > (existing.gl_points ?? 0)) {
+        seen.set(row.opl_username, row)
+      }
+    }
+
+    setRows([...seen.values()].sort((a, b) => (b.gl_points ?? 0) - (a.gl_points ?? 0)))
     setLoading(false)
   }, [sexTab, equipTab])
 

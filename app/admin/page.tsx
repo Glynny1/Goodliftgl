@@ -338,11 +338,16 @@ function ApprovedCard({ sub, onEdit }: { sub: Submission; onEdit: (s: Submission
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-semibold text-lg">
+          <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
             {sub.first_name} {sub.last_name}
-            <span className="ml-2 text-sm font-normal text-zinc-400">
+            <span className="text-sm font-normal text-zinc-400">
               {sub.sex === 'M' ? 'Male' : 'Female'} &middot; {sub.weight_class} kg &middot; BW {fmt(sub.bodyweight_kg)} kg
             </span>
+            {sub.equipment && (
+              <span className={`text-xs px-1.5 py-0.5 rounded font-normal ${sub.equipment === 'Raw' ? 'bg-zinc-700 text-zinc-300' : 'bg-blue-900/50 text-blue-300'}`}>
+                {sub.equipment}
+              </span>
+            )}
           </h3>
           <p className="text-xs text-zinc-500 mt-0.5">
             {sub.opl_username && <><span className="font-mono">{sub.opl_username}</span> &middot; </>}
@@ -437,7 +442,13 @@ export default function AdminPage() {
   async function repollAll() {
     setRepollingAll(true)
     setRepollProgress('')
-    const toRepoll = [...approved]
+    // Deduplicate: only repoll each lifter once (they may have multiple rows per equipment)
+    const seen = new Set<string>()
+    const toRepoll = approved.filter(sub => {
+      if (seen.has(sub.opl_username)) return false
+      seen.add(sub.opl_username)
+      return true
+    })
     let done = 0
     for (const sub of toRepoll) {
       setRepollProgress(`Repolling ${done + 1} / ${toRepoll.length}: ${sub.opl_username}`)

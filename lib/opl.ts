@@ -97,25 +97,14 @@ export async function fetchLifterData(username: string): Promise<OPLResult> {
   return { meets, lifterName: rows[0]?.Name ?? username, bestMeet }
 }
 
-// Personal bests per equipment type — best individual lift from any single meet
-export interface PersonalBests {
-  squat: number | null
-  bench: number | null
-  deadlift: number | null
-  total: number | null
-  gl: number | null
-}
-
-export function calcPersonalBests(meets: OPLMeet[]): Record<string, PersonalBests> {
-  const pbs: Record<string, PersonalBests> = {}
+// Best full-power meet per equipment type (for multi-row leaderboard storage)
+export function bestMeetPerEquipment(meets: OPLMeet[]): Record<string, OPLMeet> {
+  const bests: Record<string, OPLMeet> = {}
   for (const m of meets) {
-    if (!pbs[m.equipment]) pbs[m.equipment] = { squat: null, bench: null, deadlift: null, total: null, gl: null }
-    const pb = pbs[m.equipment]
-    if (m.squat_kg && m.squat_kg > (pb.squat ?? 0)) pb.squat = m.squat_kg
-    if (m.bench_kg && m.bench_kg > (pb.bench ?? 0)) pb.bench = m.bench_kg
-    if (m.deadlift_kg && m.deadlift_kg > (pb.deadlift ?? 0)) pb.deadlift = m.deadlift_kg
-    if (m.total_kg && m.total_kg > (pb.total ?? 0)) pb.total = m.total_kg
-    if (m.gl_points && m.gl_points > (pb.gl ?? 0)) pb.gl = m.gl_points
+    if (!m.gl_points || !m.squat_kg || !m.bench_kg || !m.deadlift_kg) continue
+    if (!bests[m.equipment] || m.gl_points > (bests[m.equipment].gl_points ?? 0)) {
+      bests[m.equipment] = m
+    }
   }
-  return pbs
+  return bests
 }

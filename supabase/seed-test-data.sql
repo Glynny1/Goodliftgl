@@ -1,5 +1,7 @@
--- Seed 100 test submissions (approved) with realistic powerlifting data
+-- Seed test submissions (approved) with realistic powerlifting data
 -- Run in Supabase SQL Editor against your DEV project
+-- Produces 100 primary lifters + 20 alternate-equipment entries (120 rows total)
+-- The leaderboard deduplicates by opl_username, showing best GL per lifter per equip tab
 
 INSERT INTO submissions (
   opl_username, first_name, last_name, date, sex, age,
@@ -158,3 +160,65 @@ JOIN (SELECT last_name,  row_number() OVER () AS rn FROM last_names) ln
   ON ln.rn = ((g.ln_idx - 1) % 40) + 1
 JOIN (SELECT meet_name, federation, row_number() OVER () AS rn FROM meets) m
   ON m.rn = ((g.meet_idx - 1) % 12) + 1;
+
+-- ── Alternate-equipment entries ───────────────────────────────────────────────
+-- Pick 20 random lifters and give them a second row with a different equipment
+-- type. This lets you test: "All" tab shows best GL overall, equipment tabs
+-- show the correct per-equipment best.
+
+INSERT INTO submissions (
+  opl_username, first_name, last_name, date, sex, age,
+  weight_class, bodyweight_kg, squat_kg, bench_kg, deadlift_kg,
+  total_kg, gl_points, equipment, entry_type, meet_name, federation, status
+)
+WITH src AS (
+  SELECT * FROM submissions WHERE status = 'approved'
+  ORDER BY random() LIMIT 20
+),
+alt AS (
+  SELECT
+    src.*,
+    -- Competition was earlier, slightly different bw
+    (src.date - (floor(random() * 365 + 90))::int)::date               AS alt_date,
+    round((src.bodyweight_kg * (0.96 + random() * 0.08))::numeric, 1)  AS alt_bw,
+    -- Slightly lower total (previous competition)
+    round((src.total_kg * (0.91 + random() * 0.08) / 2.5)::integer * 2.5, 1)::numeric AS alt_total,
+    -- Flip equipment type
+    CASE src.equipment
+      WHEN 'Raw'        THEN 'Wraps'
+      WHEN 'Wraps'      THEN 'Raw'
+      WHEN 'Single-ply' THEN 'Raw'
+      ELSE 'Raw'
+    END AS alt_equip
+  FROM src
+),
+splits AS (
+  SELECT
+    *,
+    round((alt_total * 0.37 / 2.5)::integer * 2.5, 1)::numeric AS sq,
+    round((alt_total * 0.25 / 2.5)::integer * 2.5, 1)::numeric AS bch
+  FROM alt
+)
+SELECT
+  opl_username,
+  first_name,
+  last_name,
+  alt_date                                                              AS date,
+  sex,
+  age,
+  weight_class,
+  alt_bw                                                                AS bodyweight_kg,
+  sq                                                                    AS squat_kg,
+  bch                                                                   AS bench_kg,
+  round((alt_total - sq - bch) / 2.5)::integer * 2.5                   AS deadlift_kg,
+  alt_total                                                             AS total_kg,
+  CASE sex
+    WHEN 'M' THEN round((alt_total / (1199.72839 - 1025.18162 * exp(-0.00921 * alt_bw)) * 100)::numeric, 4)
+    ELSE          round((alt_total / (610.32796  - 1045.59282 * exp(-0.03048  * alt_bw)) * 100)::numeric, 4)
+  END                                                                   AS gl_points,
+  alt_equip                                                             AS equipment,
+  'competition'                                                         AS entry_type,
+  'UK Alternative Championships'                                        AS meet_name,
+  federation,
+  'approved'                                                            AS status
+FROM splits;
